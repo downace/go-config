@@ -1,7 +1,10 @@
 // Package config provides simple persistent storage for application configuration
 package config
 
+import "sync"
+
 type Config[T any] struct {
+	mu         sync.Mutex
 	storage    Storage
 	serializer Serializer[T]
 
@@ -49,6 +52,9 @@ func (c *Config[T]) Load() error {
 }
 
 func (c *Config[T]) Save() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	data, err := c.serializer.SerializeData(&c.Data)
 	if err != nil {
 		return err
