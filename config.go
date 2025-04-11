@@ -1,7 +1,12 @@
 // Package config provides simple persistent storage for application configuration
 package config
 
-import "sync"
+import (
+	"errors"
+	"fmt"
+	"github.com/jinzhu/copier"
+	"sync"
+)
 
 type Config[T any] struct {
 	mu         sync.Mutex
@@ -60,4 +65,47 @@ func (c *Config[T]) Save() error {
 		return err
 	}
 	return c.storage.Save(data)
+}
+
+// Transaction simplifies atomic config changes. It runs transaction, then Save.
+// If error or panic occurs inside transaction or Save, config changes are rolled back.
+func (c *Config[T]) Transaction(transaction func(data *T) error) (err error) {
+	var backup T
+	err = copier.CopyWithOption(&backup, &c.Data, copier.Option{DeepCopy: true})
+
+	if err != nil {
+		return
+	}
+
+	defer func() {
+		if err != nil {
+			_ = copier.CopyWithOption(&c.Data, &backup, copier.Option{DeepCopy: true})
+		}
+	}()
+	defer handlePanic(&err)
+
+	err = transaction(&c.Data)
+
+	if err != nil {
+		return
+	}
+
+	err = c.Save()
+
+	return
+}
+
+func handlePanic(err *error) {
+	r := recover()
+	if r == nil {
+		return
+	}
+	switch e := r.(type) {
+	case error:
+		*err = e
+	case string:
+		*err = errors.New(e)
+	default:
+		*err = fmt.Errorf("unknown panic: %v", e)
+	}
 }
