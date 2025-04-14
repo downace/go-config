@@ -60,6 +60,10 @@ func (c *Config[T]) Save() error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
+	return c.serializeAndStore()
+}
+
+func (c *Config[T]) serializeAndStore() error {
 	data, err := c.serializer.SerializeData(&c.Data)
 	if err != nil {
 		return err
@@ -70,6 +74,9 @@ func (c *Config[T]) Save() error {
 // Transaction simplifies atomic config changes. It runs transaction, then Save.
 // If error or panic occurs inside transaction or Save, config changes are rolled back.
 func (c *Config[T]) Transaction(transaction func(data *T) error) (err error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	var backup T
 	err = copier.CopyWithOption(&backup, &c.Data, copier.Option{DeepCopy: true})
 
@@ -90,7 +97,7 @@ func (c *Config[T]) Transaction(transaction func(data *T) error) (err error) {
 		return
 	}
 
-	err = c.Save()
+	err = c.serializeAndStore()
 
 	return
 }
