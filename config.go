@@ -83,12 +83,12 @@ func (c *Config[T]) Transaction(transaction func(data *T) error) (err error) {
 		return
 	}
 
+	panicked := true
 	defer func() {
-		if err != nil {
+		if panicked || err != nil {
 			c.Data = backup
 		}
 	}()
-	defer handlePanic(&err)
 
 	err = transaction(&c.Data)
 
@@ -98,10 +98,12 @@ func (c *Config[T]) Transaction(transaction func(data *T) error) (err error) {
 
 	err = c.serializeAndStore()
 
+	panicked = false
+
 	return
 }
 
-func handlePanic(err *error) {
+func panicToError(err *error) {
 	r := recover()
 	if r == nil {
 		return

@@ -207,13 +207,13 @@ subConfig:
 		defaultConfig := TestConfig{StringProp: "default"}
 		conf := NewConfigMinimal(defaultConfig)
 
-		err := conf.Transaction(func(c *TestConfig) error {
-			c.BoolProp = false
-			c.SubConfig.Key2 = 44
-			panic("unknown panic")
+		suite.Assert.PanicsWithValue("unknown panic", func() {
+			_ = conf.Transaction(func(c *TestConfig) error {
+				c.BoolProp = false
+				c.SubConfig.Key2 = 44
+				panic("unknown panic")
+			})
 		})
-
-		suite.Assert.EqualError(err, "unknown panic")
 
 		suite.Assert.NoFileExists("config.yaml")
 

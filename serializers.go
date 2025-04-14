@@ -15,7 +15,7 @@ type Serializer[T any] interface {
 type YamlSerializer[T any] struct{}
 
 func (s YamlSerializer[T]) SerializeData(data *T) (result []byte, err error) {
-	defer handlePanic(&err)
+	defer panicToError(&err)
 	return yaml.Marshal(data)
 }
 
