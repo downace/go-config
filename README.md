@@ -42,3 +42,27 @@ conf := config.NewConfig(
 
 // ...
 ```
+
+Using `Transaction` method
+
+```go
+type AppConfig struct {
+    Host string `yaml:"host"`
+    Port uint16 `yaml:"port"`
+}
+
+conf := NewConfigMinimal(AppConfig{})
+
+err := conf.Transaction(func(data *AppConfig) error {
+    data.Host = "192.168.10.1"
+    data.Port = 8888
+    // Use panic or return non-nil error to rollback changes
+    return nil
+})
+
+if err != nil {
+    // ...
+}
+
+// Changes are saved automatically if there were no error nor panic
+```
