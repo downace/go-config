@@ -4,7 +4,7 @@ package config
 import (
 	"errors"
 	"fmt"
-	"github.com/jinzhu/copier"
+	"github.com/LastPossum/kamino"
 	"sync"
 )
 
@@ -77,8 +77,7 @@ func (c *Config[T]) Transaction(transaction func(data *T) error) (err error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	var backup T
-	err = copier.CopyWithOption(&backup, &c.Data, copier.Option{DeepCopy: true})
+	backup, err := kamino.Clone(c.Data)
 
 	if err != nil {
 		return
@@ -86,7 +85,7 @@ func (c *Config[T]) Transaction(transaction func(data *T) error) (err error) {
 
 	defer func() {
 		if err != nil {
-			_ = copier.CopyWithOption(&c.Data, &backup, copier.Option{DeepCopy: true})
+			c.Data = backup
 		}
 	}()
 	defer handlePanic(&err)
