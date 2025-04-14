@@ -14,7 +14,8 @@ type Serializer[T any] interface {
 // YamlSerializer uses YAML format to store config
 type YamlSerializer[T any] struct{}
 
-func (s YamlSerializer[T]) SerializeData(data *T) ([]byte, error) {
+func (s YamlSerializer[T]) SerializeData(data *T) (result []byte, err error) {
+	defer handlePanic(&err)
 	return yaml.Marshal(data)
 }
 
